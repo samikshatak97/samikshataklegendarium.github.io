@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Samiksha's LEGENDARIUM — The Immortal LEGENDPEDIA</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Georgia,serif}
+
+body{
+background:linear-gradient(135deg,#120000,#000);
+color:white;
+overflow-x:hidden;
+}
+
+/* Cinematic animated background */
+body::before{
+content:"";
+position:fixed;
+top:0;left:0;
+width:100%;height:100%;
+background:radial-gradient(circle,#3a0000 0%,#000 75%);
+animation:bgmove 10s infinite alternate;
+z-index:-2;
+}
+@keyframes bgmove{
+from{opacity:.7;transform:scale(1)}
+to{opacity:1;transform:scale(1.08)}
+}
+
+/* HERO */
+.hero{
+height:100vh;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+text-align:center;
+padding:20px;
+}
+
+/* Animated title */
+.title{
+color:gold;
+font-size:1.8rem;
+margin-bottom:20px;
+text-shadow:0 0 15px rgba(255,215,0,.7);
+animation:bounce 2s infinite;
+}
+@keyframes bounce{
+0%,100%{transform:translateY(0);}
+50%{transform:translateY(-10px);}
+}
+
+/* Panel */
+.panel{
+background:rgba(0,0,0,.6);
+border:2px solid gold;
+padding:20px;
+border-radius:15px;
+width:95%;
+max-width:430px;
+box-shadow:0 0 30px rgba(255,215,0,.3);
+}
+
+input,select,button{
+width:100%;
+padding:12px;
+margin-top:10px;
+border:none;
+border-radius:10px;
+font-size:16px;
+}
+
+button{
+background:linear-gradient(45deg,#8b0000,#b8860b);
+color:white;
+font-weight:bold;
+cursor:pointer;
+transition:.3s;
+}
+button:hover{transform:scale(1.03)}
+
+#suggestions{
+background:#111;
+border-radius:8px;
+margin-top:5px;
+max-height:150px;
+overflow:auto;
+text-align:left;
+}
+.suggestItem{
+padding:8px;
+cursor:pointer;
+border-bottom:1px solid #333;
+}
+.suggestItem:hover{background:#300}
+
+/* Loader */
+#loader{
+display:none;
+margin-top:10px;
+color:gold;
+font-size:14px;
+animation:pulse 1s infinite;
+}
+@keyframes pulse{
+0%,100%{opacity:.4}
+50%{opacity:1}
+}
+
+/* RESULT */
+#result{
+display:none;
+padding:20px;
+animation:fade .8s;
+}
+@keyframes fade{
+from{opacity:0;transform:translateY(25px)}
+to{opacity:1;transform:translateY(0)}
+}
+
+.card{
+max-width:900px;
+margin:auto;
+background:rgba(0,0,0,.6);
+border:2px solid gold;
+padding:20px;
+border-radius:20px;
+box-shadow:0 0 25px rgba(255,215,0,.25);
+}
+
+.card img{
+width:200px;height:200px;
+border-radius:50%;
+object-fit:cover;
+border:3px solid gold;
+margin:15px 0;
+transition:.4s;
+}
+.card img:hover{
+transform:scale(1.05);
+box-shadow:0 0 25px gold;
+}
+
+.sectionTitle{color:gold;margin-top:10px}
+
+.back{
+margin-top:15px;
+display:inline-block;
+padding:10px 20px;
+background:#300;
+border:1px solid gold;
+border-radius:10px;
+cursor:pointer;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="hero" id="home">
+<h1 class="title">
+Samiksha's LEGENDARIUM — The Immortal LEGENDPEDIA
+</h1>
+
+<div class="panel">
+
+<input id="searchBox" placeholder="Search any personality..." oninput="showSuggestions()">
+<div id="suggestions"></div>
+
+<select id="lang">
+<option value="en">English</option>
+<option value="hi">Hindi</option>
+<option value="bn">Bengali</option>
+<option value="ta">Tamil</option>
+<option value="kn">Kannada</option>
+<option value="ml">Malayalam</option>
+<option value="fr">French</option>
+</select>
+
+<button onclick="searchPerson()">Explore Legend</button>
+<div id="loader">✨ Awakening the legend...</div>
+
+</div>
+</div>
+
+<div id="result">
+<div class="card">
+
+<h2 id="name"></h2>
+<img id="img">
+
+<h3 class="sectionTitle">📜 Introduction</h3>
+<p id="bio"></p>
+
+<h3 class="sectionTitle">⭐ Why Famous</h3>
+<p id="famous"></p>
+
+<button onclick="speak()">🔊 Hear Voice</button>
+
+<div class="back" onclick="goBack()">⬅ Back</div>
+
+</div>
+</div>
+
+<script>
+
+let currentBio="",currentName="",famousLine="";
+
+/* Suggestions */
+async function showSuggestions(){
+let q=searchBox.value.trim();
+if(q.length<3){suggestions.innerHTML="";return;}
+
+let url=`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&format=json&origin=*`;
+let res=await fetch(url);
+let data=await res.json();
+
+suggestions.innerHTML="";
+data.query.search.slice(0,5).forEach(item=>{
+let d=document.createElement("div");
+d.className="suggestItem";
+d.innerText=item.title;
+d.onclick=()=>{
+searchBox.value=item.title;
+suggestions.innerHTML="";
+};
+suggestions.appendChild(d);
+});
+}
+
+/* Search */
+async function searchPerson(){
+
+let q=searchBox.value.trim();
+if(!q) return alert("Enter a name");
+
+loader.style.display="block";
+suggestions.innerHTML="";
+
+try{
+
+let sres=await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&format=json&origin=*`);
+let sdata=await sres.json();
+
+if(!sdata.query.search.length){
+alert("No result found");
+loader.style.display="none";
+return;
+}
+
+let title=sdata.query.search[0].title;
+
+let res=await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
+let data=await res.json();
+
+currentName=data.title;
+currentBio=data.extract || "No information.";
+famousLine=currentBio.split(".")[0];
+
+home.style.display="none";
+result.style.display="block";
+loader.style.display="none";
+
+name.innerText=currentName;
+img.src=data.thumbnail?data.thumbnail.source:"https://via.placeholder.com/200";
+
+translateText();
+
+setTimeout(()=>speak(),400);
+
+}catch{
+loader.style.display="none";
+alert("Could not load personality.");
+}
+}
+
+/* Translation */
+function translateText(){
+let lang=langSelect();
+
+if(lang==="en"){
+bio.innerText=currentBio;
+famous.innerText=famousLine;
+return;
+}
+
+fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${lang}&dt=t&q=${encodeURIComponent(currentBio)}`)
+.then(r=>r.json())
+.then(data=>{
+let t=data[0].map(x=>x[0]).join("");
+bio.innerText=t;
+famous.innerText=t.split(".")[0];
+})
+.catch(()=>{
+bio.innerText=currentBio;
+famous.innerText=famousLine;
+});
+}
+
+function langSelect(){
+return document.getElementById("lang").value;
+}
+
+/* Voice */
+function speak(){
+speechSynthesis.cancel();
+
+const voiceMap={
+en:"en-US",hi:"hi-IN",bn:"bn-IN",
+ta:"ta-IN",kn:"kn-IN",ml:"ml-IN",
+fr:"fr-FR"
+};
+
+let msg=new SpeechSynthesisUtterance(bio.innerText);
+msg.lang=voiceMap[langSelect()];
+speechSynthesis.speak(msg);
+}
+
+/* Back */
+function goBack(){
+speechSynthesis.cancel();
+result.style.display="none";
+home.style.display="flex";
+}
+
+</script>
+
+</body>
+  </html>
